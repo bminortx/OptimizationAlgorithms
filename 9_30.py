@@ -51,6 +51,7 @@ def solve_grad(A, x, alpha, beta, maxiter, epsilon):
 
 
 def solve_newton(A, x, alpha, beta, maxiter, epsilon):
+    T = np.array([])
     for i in range(1, maxiter):
         y = (- np.sum(np.log(1 - np.dot(A, x)))
              - np.sum(np.log(1 + x))
@@ -74,6 +75,8 @@ def solve_newton(A, x, alpha, beta, maxiter, epsilon):
         if lambdaSq / 2 <= epsilon:
             print "Iterations"
             print i;
+            # Graph this later
+            plt.scatter(T);
             return x;
 
         # Else we keep going!
@@ -96,6 +99,7 @@ def solve_newton(A, x, alpha, beta, maxiter, epsilon):
                      - np.sum(np.log(1 - np.square(x + t * delX))))
 
         # 3. Update to next step
+        np.append(T, t);
         x = x + t * delX;
 
 
