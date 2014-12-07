@@ -5,6 +5,8 @@
 # Which only computes the Hessian every 5 steps.
 # As far as using the diagonal, I already did that. Sooooo yes.
 
+# TODO: Correct np.divide implementation
+
 import matplotlib.pyplot as plt
 import scipy
 import numpy as np
@@ -15,18 +17,18 @@ def solve_newton(A, x, alpha, beta, maxiter, epsilon):
         y = (- np.sum(np.log(1 - np.dot(A, x)))
              - np.sum(np.log(1 + x))
              - np.sum(np.log(1 - x)));
-        grad = (np.dot(np.transpose(A), np.divide(1, (1 - np.dot(A, x))))
-                - np.divide(1, 1 + x)
-                + np.divide(1, 1 - x));
+        grad = (np.dot(np.transpose(A), np.true_divide(1, (1 - np.dot(A, x))))
+                - np.true_divide(1, 1 + x)
+                + np.true_divide(1, 1 - x));
         if i % 4 == 1:
             # JESUS That was hard to organize
             hess = (np.dot(A.transpose(),
                            np.dot(
                                np.diagflat(
-                                   np.square(np.divide(1, 1 - np.dot(A, x)))),
+                                   np.square(np.true_divide(1, 1 - np.dot(A, x)))),
                                A))
-                    + np.diagflat(np.divide(1, np.square(1 + x)))
-                    + np.diagflat(np.divide(1, np.square(1 - x))))
+                    + np.diagflat(np.true_divide(1, np.square(1 + x)))
+                    + np.diagflat(np.true_divide(1, np.square(1 - x))))
 
         # delX = A\b
         delX = np.linalg.solve(-hess, grad)

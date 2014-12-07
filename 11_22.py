@@ -1,6 +1,8 @@
 # 11.22
 # Implementation of the barrier function
 
+# TODO: Correct np.divide implementation
+
 import matplotlib.pyplot as plt
 import scipy
 import numpy as np
@@ -16,15 +18,14 @@ def barrierOptimization(A, b, mu, maxiter, epsilon):
     # Just calculate these once
     obj = u - l;
     barrier = b - Amax * u + Amin * l;
+    obj_grad = -np.diagflat(np.divide(obj))
+    obj_hess = -np.diagflat(np.)
+    barrier_grad = -np.diagflat(np.divide(barrier))
+    barrier_hess = -np.diagflat(np.linalg.pinv(np.linalg.pinv(barrier)))
     y = (t * - np.sum(np.log(obj))) - np.sum(np.log(barrier))
-    grad = ((t * (-np.diagflat(np.pinv(obj)) + np.diagflat(np.pinv(obj))))
-            + Amax * np.diagflat(np.pinv(barrier))
-            - Amin * np.diagflat(np.pinv(barrier)))
-    hess = ((t * (-np.diagflat(np.pinv(obj)) + np.diagflat(np.pinv(obj))))
-            + Amax * np.diagflat(np.pinv(barrier))
-            - Amin * np.diagflat(np.pinv(barrier)))
-    
-    print y
+    grad = (t * [[-obj_grad], [obj_grad]]
+            + [[Amax], [-Amin]] * barrier_grad)
+    # hess = (t *
     
 
     # 2. Update
