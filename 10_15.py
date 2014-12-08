@@ -11,14 +11,21 @@ import numpy as np
 
 
 # WORKS
-def solveNewton(A, x, b, alpha, beta, maxiter, epsilon):
+def solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon):
     for i in range(1, maxiter):
         y = x.T * np.log(x)
         grad = 1 + np.log(x)
         # Use the diagonal Hessian trick!
         hess = np.diagflat(np.true_divide(1, x))
-        # delX = A\b
-        delX = np.linalg.solve(-hess, grad);
+        # Since this has equality constraints, we have to use
+        # the KKT Solution
+        Asol = np.array(np.vstack([np.hstack([hess, A.T]),
+                                   np.hstack([A, np.zeros((p, p))])]));
+        bsol = np.array(np.vstack([grad, np.zeros((p, 1))]));
+        # Since the solution above is stacked, we only need the
+        # first n elements as the sollution to x. 
+        sol = np.linalg.solve(-Asol, bsol);
+        delX = sol[0:n];
         lambdaSq = np.dot(grad.T, delX);
         # Cutoff point, checked after step 1
         if np.any(np.abs(lambdaSq) <= epsilon):
@@ -29,7 +36,7 @@ def solveNewton(A, x, b, alpha, beta, maxiter, epsilon):
             return x;
 
         # Else we keep going!
-        # 2. Line Searchn
+        # 2. Line Search
         t = 1;
         # Have to do some preprocessing here, or else we get NaNs
         # from the log() term
@@ -149,6 +156,6 @@ if __name__ == '__main__':
     x = np.random.rand(n, 1);
     # b is derived from Ax = b, making x feasible
     b = np.dot(A, x);
-    solveNewton(A, x, b, alpha, beta, maxiter, epsilon);
+    solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon);
     # solveInfeasibleNewton(A, x, b, alpha, beta, maxiter, epsilon);
     # solveDualNewton(A, x, b, alpha, beta, maxiter, epsilon);
