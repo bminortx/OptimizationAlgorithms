@@ -23,7 +23,7 @@ def solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon):
                                    np.hstack([A, np.zeros((p, p))])]));
         bsol = np.array(np.vstack([grad, np.zeros((p, 1))]));
         # Since the solution above is stacked, we only need the
-        # first n elements as the sollution to x. 
+        # first n elements as the sollution to x.
         sol = np.linalg.solve(-Asol, bsol);
         delX = sol[0:n];
         lambdaSq = np.dot(grad.T, delX);
@@ -42,7 +42,6 @@ def solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon):
         # from the log() term
         while np.all(x + t * delX < 0):
             t = t * beta;
-            print t
 
         yStep = (x + t * delX).T * np.log(x + t * delX);
         while np.all(yStep > y + alpha * t * lambdaSq):
@@ -53,19 +52,34 @@ def solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon):
         x = x + t * delX;
 
 
-def solveInfeasibleNewton(A, x, b, alpha, beta, maxiter, epsilon):
+# Remember: the backtracking search on the Infeasible Newton Method is
+# on the residual dual and primal, not the term itself.
+def solveInfeasibleNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon):
+    # Provide the dual variable we're solving for
+    nu = np.zeros((p, 1));
     for i in range(1, maxiter):
-        y = x.T * np.log(x)
-        grad = 1 + np.log(x)
+        # Notice: we don't calculate a term for y.
+        grad = 1 + np.log(x);
         # Use the diagonal Hessian trick!
         hess = np.diagflat(np.true_divide(1, x))
-        # delX = A\b
-        delX = np.linalg.solve(-hess, grad);
-        lambdaSq = np.dot(grad.T, delX);
+        # The Infeasible solution is also a KKT
+        # bsol here also represents
+        # [ r_dual ]
+        # [r_primal]
+        # Which we will use during the backtracking search
+        Asol = np.array(np.vstack([np.hstack([hess, A.T]),
+                                   np.hstack([A, np.zeros((p, p))])]));
+        residSol = np.array(np.vstack([grad + np.dot(A.T, nu),
+                                       np.dot(A, x) - b]));
+        # Since the solution above is stacked, we only need the
+        # first n elements as the sollution to x.
+        sol = np.linalg.solve(-Asol, residSol);
+        delX = sol[0:n];
+        delNu = sol[n:];
         # Cutoff point, checked after step 1
-        if np.any(np.abs(lambdaSq) <= epsilon):
-            print "lambdaSq"
-            print lambdaSq
+        if np.any(np.linalg.norm(residSol) <= epsilon):
+            # print "residual: "
+            # print residSol
             print "Iterations";
             print i;
             return x;
@@ -77,15 +91,21 @@ def solveInfeasibleNewton(A, x, b, alpha, beta, maxiter, epsilon):
         # from the log() term
         while np.all(x + t * delX < 0):
             t = t * beta;
-            print t
 
-        yStep = (x + t * delX).T * np.log(x + t * delX);
-        while np.all(yStep > y + alpha * t * lambdaSq):
+        gradStep = 1 + np.log(x + t * delX);
+        residStep = np.array(np.vstack([gradStep
+                                        + np.dot(A.T, (nu + t * delNu)),
+                                        np.dot(A, (x + t * delX)) - b]));
+        while np.all(residStep > (1 - alpha * t) * np.linalg.norm(residSol)):
             t = t * beta;
-            yStep = (x + t * delX).T * np.log(x + t * delX);
+            gradStep = 1 + np.log(x + t * delX);
+            residStep = np.array(np.vstack([gradStep
+                                            + np.dot(A.T * (nu + t * delNu)),
+                                            np.dot(A, (x + t * delNu)) - b]));
 
         # 3. Update to next step
         x = x + t * delX;
+        nu = nu + t * delNu;
 
 
 def solveDualNewton(A, x, b, alpha, beta, maxiter, epsilon):
@@ -156,6 +176,6 @@ if __name__ == '__main__':
     x = np.random.rand(n, 1);
     # b is derived from Ax = b, making x feasible
     b = np.dot(A, x);
-    solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon);
-    # solveInfeasibleNewton(A, x, b, alpha, beta, maxiter, epsilon);
+    # solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon);
+    solveInfeasibleNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon);
     # solveDualNewton(A, x, b, alpha, beta, maxiter, epsilon);
