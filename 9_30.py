@@ -14,6 +14,7 @@ import numpy as np
 # WORKS
 def solve_grad(A, x, alpha, beta, maxiter, epsilon):
     T = np.array([0]);
+    steps = np.zeros((x.shape[0], 1));
     for i in range(1, maxiter):
         y = (- np.sum(np.log(1 - np.dot(A, x)))
              - np.sum(np.log(1 + x))
@@ -26,7 +27,7 @@ def solve_grad(A, x, alpha, beta, maxiter, epsilon):
         if np.linalg.norm(grad) <= epsilon:
             print "Iterations"
             print i;
-            return (x, T);
+            return (x, steps, T);
 
         # Else we keep going!
         # 2. Line Search
@@ -50,10 +51,12 @@ def solve_grad(A, x, alpha, beta, maxiter, epsilon):
         # 3. Update to next step
         x = x + t * delX;
         T = np.append(T, t);
+        steps = np.hstack([steps, x]);
 
 
 def solve_newton(A, x, alpha, beta, maxiter, epsilon):
     T = np.array([0]);
+    steps = np.zeros((x.shape[0], 1));
     for i in range(1, maxiter):
         y = (- np.sum(np.log(1 - np.dot(A, x)))
              - np.sum(np.log(1 + x))
@@ -77,7 +80,7 @@ def solve_newton(A, x, alpha, beta, maxiter, epsilon):
         if lambdaSq / 2 <= epsilon:
             print "Iterations"
             print i;
-            return (x, T);
+            return (x, steps, T);
 
         # Else we keep going!
         # 2. Line Search
@@ -101,6 +104,7 @@ def solve_newton(A, x, alpha, beta, maxiter, epsilon):
         # 3. Update to next step
         x = x + t * delX;
         T = np.append(T, t);
+        steps = np.hstack([steps, x]);
 
 
 # MAIN FUNCTION
@@ -116,13 +120,27 @@ if __name__ == '__main__':
     A = np.random.randn(m, n);
     # x: n x 1
     x = np.zeros((n, 1));
-    (resGrad, TGrad) = solve_grad(A, x, alpha, beta, maxiter, epsilon);
-    (resNewton, TNewton) = solve_newton(A, x, alpha, beta, maxiter, epsilon);
+    (resGrad, stepsGrad, TGrad) = solve_grad(A, x, alpha,
+                                             beta, maxiter, epsilon);
+    (resNewton, stepsNewton, TNewton) = solve_newton(A, x, alpha,
+                                                     beta, maxiter, epsilon);
+    xGrad = np.array(range(1, TGrad.shape[0]+1));
+    xNewton = np.array(range(1, TNewton.shape[0]+1));
+    # Find our norm between f and p*
+    distGrad = np.linalg.norm(resGrad - stepsGrad, axis=0);
+    distNewton = np.linalg.norm(resNewton - stepsNewton, axis=0);
+    xDistGrad = np.array(range(1, distGrad.shape[0]+1));
+    xDistNewton = np.array(range(1, distNewton.shape[0]+1));
+
+    # Our plots
     plt.figure(1);
-    xGrad = range(1, TGrad.shape[0]);
-    xNewton = range(1, TNewton.shape[0]);
-    print TGrad;
-    print xGrad;
     plt.plot(xGrad, TGrad, 'b');
     plt.plot(xNewton, TNewton, 'k');
-    plt.show();
+    plt.title("t size vs. iteration: Grad(blue) and Newton(blk)")
+    plt.savefig('tStep.png', bbox_inches='tight')
+
+    plt.figure(2);
+    plt.plot(xDistGrad, distGrad, 'bo');
+    plt.plot(xDistNewton, distNewton, 'ko');
+    plt.title("distance between iteration and solution")
+    plt.savefig('Distance.png', bbox_inches='tight')
