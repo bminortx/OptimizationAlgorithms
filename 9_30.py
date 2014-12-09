@@ -13,6 +13,7 @@ import numpy as np
 # Gradient method
 # WORKS
 def solve_grad(A, x, alpha, beta, maxiter, epsilon):
+    T = np.array([0]);
     for i in range(1, maxiter):
         y = (- np.sum(np.log(1 - np.dot(A, x)))
              - np.sum(np.log(1 + x))
@@ -25,7 +26,7 @@ def solve_grad(A, x, alpha, beta, maxiter, epsilon):
         if np.linalg.norm(grad) <= epsilon:
             print "Iterations"
             print i;
-            return x;
+            return (x, T);
 
         # Else we keep going!
         # 2. Line Search
@@ -48,10 +49,11 @@ def solve_grad(A, x, alpha, beta, maxiter, epsilon):
 
         # 3. Update to next step
         x = x + t * delX;
+        T = np.append(T, t);
 
 
 def solve_newton(A, x, alpha, beta, maxiter, epsilon):
-    T = np.array([])
+    T = np.array([0]);
     for i in range(1, maxiter):
         y = (- np.sum(np.log(1 - np.dot(A, x)))
              - np.sum(np.log(1 + x))
@@ -75,9 +77,7 @@ def solve_newton(A, x, alpha, beta, maxiter, epsilon):
         if lambdaSq / 2 <= epsilon:
             print "Iterations"
             print i;
-            # Graph this later
-            plt.scatter(T);
-            return x;
+            return (x, T);
 
         # Else we keep going!
         # 2. Line Search
@@ -99,8 +99,8 @@ def solve_newton(A, x, alpha, beta, maxiter, epsilon):
                      - np.sum(np.log(1 - np.square(x + t * delX))))
 
         # 3. Update to next step
-        np.append(T, t);
         x = x + t * delX;
+        T = np.append(T, t);
 
 
 # MAIN FUNCTION
@@ -113,8 +113,16 @@ if __name__ == '__main__':
     m = 8;
     # CREATE OUR VARIABLES
     # A: m x n. Created from standard distribution
-    A = np.random.randn(m, n)
+    A = np.random.randn(m, n);
     # x: n x 1
-    x = np.zeros((n, 1))
-    solve_grad(A, x, alpha, beta, maxiter, epsilon);
-    solve_newton(A, x, alpha, beta, maxiter, epsilon);
+    x = np.zeros((n, 1));
+    (resGrad, TGrad) = solve_grad(A, x, alpha, beta, maxiter, epsilon);
+    (resNewton, TNewton) = solve_newton(A, x, alpha, beta, maxiter, epsilon);
+    plt.figure(1);
+    xGrad = range(1, TGrad.shape[0]);
+    xNewton = range(1, TNewton.shape[0]);
+    print TGrad;
+    print xGrad;
+    plt.plot(xGrad, TGrad, 'b');
+    plt.plot(xNewton, TNewton, 'k');
+    plt.show();

@@ -76,7 +76,7 @@ if __name__ == '__main__':
     m = 8;
     # CREATE OUR VARIABLES
     # A: m x n. Created from standard distribution
-    A = np.random.randn(m, n)
+    A = np.random.rand(m, n);
     # x: n x 1
-    x = np.zeros((n, 1))
+    x = np.zeros((n, 1));
     solve_newton(A, x, alpha, beta, maxiter, epsilon);

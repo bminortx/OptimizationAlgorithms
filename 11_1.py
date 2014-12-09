@@ -19,4 +19,4 @@ if __name__ == '__main__':
     x = np.arange(2.01, 3.99, 0.02)
     for t in np.arange(0, 10, .1):
         plt.plot(x, f(x), 'bo', x, f(x)+phi(x)/t, 'k')
-    plt.show()
+        plt.show()
