@@ -108,57 +108,45 @@ def solveInfeasibleNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon):
         nu = nu + t * delNu;
 
 
-def solveDualNewton(A, x, b, alpha, beta, maxiter, epsilon):
-    T = np.array([])
+# Literally the same as the primal Newton, just using the
+# dual equation instead.
+def solveDualNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon):
+    # Provide the dual variable we're solving for
+    nu = np.zeros((p, 1));
     for i in range(1, maxiter):
-        y = (- np.sum(np.log(1 - np.dot(A, x)))
-             - np.sum(np.log(1 + x))
-             - np.sum(np.log(1 - x)));
-        grad = (np.dot(np.transpose(A), np.true_divide(1, (1 - np.dot(A, x))))
-                - np.true_divide(1, 1 + x)
-                + np.true_divide(1, 1 - x));
-        # JESUS That was hard to organize
-        hess = (np.dot(A.transpose(),
-                       np.dot(
-                           np.diagflat(
-                               np.square(np.true_divide(1, 1 - np.dot(A, x)))),
-                           A))
-                + np.diagflat(np.true_divide(1, np.square(1 + x)))
-                + np.diagflat(np.true_divide(1, np.square(1 - x))))
-        # delX = A\b
-        delX = np.linalg.solve(-hess, grad)
-        lambdaSq = (np.dot(grad.transpose(),
-                           np.dot(np.linalg.pinv(hess), grad)))
+        # This requires that we find the dual formula, which here is:
+        # maximize -b' * nu - sum( exp( -a' * nu - 1))
+        # So take the negative and minimize!
+        y = np.dot(b.T, nu) + np.sum(np.exp(np.dot(-A.T, nu) - 1));
+        # Thus, the grad and hess are derived from this expression
+        # w.r.t. nu
+        grad = b - np.dot(A, np.exp(np.dot(-A.T, nu) - 1));
+        # Use the diagonal Hessian trick! Because it's a sum.
+        hess = np.dot(
+            np.dot(A,
+                   np.diagflat(np.exp(np.dot(-A.T, nu) - 1))),
+            A.T);
+        # This is just a straightforward linear system
+        delNu = np.linalg.solve(-hess, grad);
+        lambdaSq = np.dot(grad.T, delNu);
         # Cutoff point, checked after step 1
-        if lambdaSq / 2 <= epsilon:
-            print "Iterations"
+        if np.any(np.abs(lambdaSq) <= epsilon):
+            print "Iterations";
             print i;
-            # Graph this later
-            plt.scatter(T);
             return x;
 
         # Else we keep going!
         # 2. Line Search
-        t = 1
-        # Have to do some preprocessing here, or else we get NaNs
-        # from the log() term
-        dotChange = np.max(np.dot(A, (x + t * delX)));
-        squareChange = np.max(np.abs(x + t * delX));
-        while np.greater(dotChange, 1) | np.greater(squareChange, 1):
+        t = 1;
+        yStep = (np.dot(-b.T, nu + t * delNu)
+                 - np.sum(np.exp(np.dot(-A.T, (nu + t * delNu)) - 1)));
+        while np.all(yStep > y + alpha * t * lambdaSq):
             t = t * beta;
-            dotChange = np.max(np.dot(A, (x + t * delX)));
-            squareChange = np.max(np.abs(x + t * delX));
-
-        yStep = (- np.sum(np.log(1 - np.dot(A, (x + t * delX))))
-                 - np.sum(np.log(1 - np.square(x + t * delX))))
-        while yStep > y + alpha * t * np.dot(np.transpose(grad), delX):
-            t = t * beta;
-            yStep = (- np.sum(np.log(1 - np.dot(A, (x + t * delX))))
-                     - np.sum(np.log(1 - np.square(x + t * delX))))
+            yStep = (np.dot(-b.T, nu + t * delNu)
+                     - np.sum(np.exp(np.dot(-A.T, (nu + t * delNu)) - 1)));
 
         # 3. Update to next step
-        np.append(T, t);
-        x = x + t * delX;
+        nu = nu + t * delNu;
 
 
 # MAIN FUNCTION
@@ -166,7 +154,7 @@ if __name__ == '__main__':
     alpha = 0.01;
     beta = 0.5;
     maxiter = 100;
-    epsilon = 1e-5;
+    epsilon = 1e-10;
     n = 100;
     p = 30;
     # CREATE OUR VARIABLES
@@ -176,6 +164,6 @@ if __name__ == '__main__':
     x = np.random.rand(n, 1);
     # b is derived from Ax = b, making x feasible
     b = np.dot(A, x);
-    # solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon);
+    solveNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon);
     solveInfeasibleNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon);
-    # solveDualNewton(A, x, b, alpha, beta, maxiter, epsilon);
+    solveDualNewton(A, x, b, n, p, alpha, beta, maxiter, epsilon);
